@@ -108,6 +108,9 @@ class WebOutput extends Output {
     }
 
     function footer(): void {
+        echo "<script>";
+        echo "document.querySelector('input').value = document.querySelector('.result .value').innerText;";
+        echo "</script>";
         echo "</body>";
         echo "</html>";
     }
@@ -133,17 +136,55 @@ class Presentation {
 
 
 
+class LotoQuery {
+    private string $apiUrlPattern = "https://servicebus2.caixa.gov.br/portaldeloterias/api/megasena/{lotteryNumber}";
+
+    function queryJson(string $url): array {
+        $data = @file_get_contents($url);
+        $error = error_get_last();
+        if (!$error) {
+            $json = json_decode($data, true);
+            return $json;
+        } else {
+            return ["error" => $error];
+        }
+    }
+
+    function query(int $lotteryNumber = 0): array {
+        $lotteryNumberAsText = $lotteryNumber > 0 ? "$lotteryNumber" : "";
+        $apiUrl = str_replace("{lotteryNumber}", $lotteryNumberAsText, $this->apiUrlPattern);
+        $json = $this->queryJson($apiUrl);
+        if (!isset($json["error"])) {
+            $data = [
+                "Número do sorteio" => $json['numero'],
+                "Local do sorteio" => $json['localSorteio'] . ", " . $json['nomeMunicipioUFSorteio'],
+                "Data do sorteio" => $json['dataApuracao'],
+                "Números sorteados" => implode(' / ', $json['dezenasSorteadasOrdemSorteio']),
+                "Valor arrecadado" => "R$ " . number_format($json['valorArrecadado'], 2, ",", "."),
+                "Ganhadores e Prêmios na 1ª faixa" => $json['listaRateioPremio'][0]["descricaoFaixa"] . ": " . $json['listaRateioPremio'][0]["numeroDeGanhadores"] . " pessoa(s) x R$ " . number_format($json['listaRateioPremio'][0]["valorPremio"], 2, ",", ".") . " = total de R$ " . number_format($json['listaRateioPremio'][0]["numeroDeGanhadores"] * $json['listaRateioPremio'][0]["valorPremio"], 2, ",", "."),
+                "Ganhadores e Prêmios na 2ª faixa" => $json['listaRateioPremio'][1]["descricaoFaixa"] . ": " . $json['listaRateioPremio'][1]["numeroDeGanhadores"] . " pessoa(s) x R$ " . number_format($json['listaRateioPremio'][1]["valorPremio"], 2, ",", ".") . " = total de R$ " . number_format($json['listaRateioPremio'][1]["numeroDeGanhadores"] * $json['listaRateioPremio'][1]["valorPremio"], 2, ",", "."),
+                "Ganhadores e Prêmios na 3ª faixa" => $json['listaRateioPremio'][2]["descricaoFaixa"] . ": " . $json['listaRateioPremio'][2]["numeroDeGanhadores"] . " pessoa(s) x R$ " . number_format($json['listaRateioPremio'][2]["valorPremio"], 2, ",", ".") . " = total de R$ " . number_format($json['listaRateioPremio'][2]["numeroDeGanhadores"] * $json['listaRateioPremio'][2]["valorPremio"], 2, ",", "."),
+                "Valor acumulado para o próximo sorteio" => "R$ " . number_format($json['valorAcumuladoProximoConcurso'], 2, ",", "."),
+                "Valor estimado do próximo sorteio" => "R$ " . number_format($json['valorEstimadoProximoConcurso'], 2, ",", "."),
+                "Data do próximo sorteio" => $json['dataProximoConcurso'],
+            ];
+        } else {
+            $data = [ "Erro ao realizar consulta" => $json["error"]["message"] ];
+        }
+        return $data;
+    }
+}
+
+
+
 $presentation = new Presentation();
 
 $presentation->output->addFields(["title" => "LotoQuery"]);
 $presentation->output->header();
 
 $lotteryNumber = $presentation->input->readInteger("Número do sorteio: ");
-
-$data = [
-    "chave1" => "valor1",
-    "chave2" => "valor2",
-];
+$lotoQuery = new LotoQuery();
+$data = $lotoQuery->query($lotteryNumber);
 
 $presentation->output->body($data);
 $presentation->output->footer();
