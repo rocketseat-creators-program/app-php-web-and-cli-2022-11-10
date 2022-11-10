@@ -90,6 +90,13 @@ class WebOutput extends Output {
         echo "<head>";
         echo "<meta charset='UTF-8'>";
         echo "<title>{$this->fields['title']}</title>";
+        echo "<style>";
+        echo "html { background-color: #3C3F41; color: #87939A; font-family: sans-serif; font-size: 1.1em; }";
+        echo "input { margin: 0.5em 0.5em 0.5em 0; padding: 0.5em; font-weight: bold; font-size: 1em; }";
+        echo ".result { display: flex; margin-bottom: 0.25em; }";
+        echo ".result .label { margin-right: 1em; width: 400px; }";
+        echo ".result .value { font-weight: bold; color: white; }";
+        echo "</style>";
         echo "</head>";
         echo "<body>";
         echo "<h1>{$this->fields['title']}</title></h1>";
