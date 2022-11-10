@@ -1,12 +1,47 @@
 <?php
 
-interface IInput { }
+interface IInput {
+    function readString(string $title): string;
+    function readInteger(string $title): int;
+}
 
-abstract class Input implements IInput { }
+abstract class Input implements IInput {
+    function readInteger(string $title): int {
+        do {
+            $text = $this->readString($title);
+        } while (strlen($text) > 0 && (int)$text != $text);
+        return strlen($text) == 0 ? 0 : (int)$text;
+    }
+}
 
-class CliInput extends Input { }
+class CliInput extends Input {
+    function readString(string $title): string {
+        echo $title;
+        $data = isset($_SERVER['argv'][1]) ? $_SERVER['argv'][1] : '';
+        if ($data) {
+            echo $data . PHP_EOL;
+        } else {
+            $data = trim(fgets(STDIN));
+        }
+        echo PHP_EOL;
+        return $data;
+    }
+}
 
-class WebInput extends Input { }
+class WebInput extends Input {
+    function readString(string $title): string {
+        $id = substr(md5($title), 0, 4);
+        $value = isset($_GET[$id]) ? $_GET[$id] : '';
+        echo "<form>";
+        echo "<label for='$id'>";
+        echo "<div>$title</div>";
+        echo "<input type='number' id='$id' name='$id' value='$value' />";
+        echo "</label>";
+        echo "<input type='submit' value='Consultar' />";
+        echo "</form>";
+        return $value;
+    }
+}
 
 
 
@@ -102,6 +137,8 @@ $presentation = new Presentation();
 
 $presentation->output->addFields(["title" => "LotoQuery"]);
 $presentation->output->header();
+
+$lotteryNumber = $presentation->input->readInteger("Número do sorteio: ");
 
 $data = [
     "chave1" => "valor1",
