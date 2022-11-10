@@ -147,7 +147,13 @@ class LotoQuery {
     private string $apiUrlPattern = "https://servicebus2.caixa.gov.br/portaldeloterias/api/megasena/{lotteryNumber}";
 
     function queryJson(string $url): array {
-        $data = @file_get_contents($url);
+        $context = stream_context_create([
+            "ssl"=> [
+                "verify_peer" => false,
+                "verify_peer_name" => false,
+            ],
+        ]);
+        $data = @file_get_contents($url, false, $context);
         $error = error_get_last();
         if (!$error) {
             $json = json_decode($data, true);
